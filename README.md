@@ -6,19 +6,16 @@ Built with **React 19**, **TypeScript**, **Tailwind CSS**, and **shadcn/ui** des
 
 ---
 
-## 🚀 Key Improvements over `gsocorganizations.dev`
+## 🚀 Features & Capabilities
 
-| Feature | Original (`gsocorganizations.dev`) | GSoC Organizations Pro (This Clone) |
-| :--- | :--- | :--- |
-| **Design System** | Dated 2018 Semantic UI (Gatsby) | **Modern shadcn/ui + Tailwind (Zinc & Orange)** |
-| **Theme** | Light only | **Seamless Dark / Light Mode** |
-| **Organizations** | Incomplete older list | **All 519 Orgs verified (2016 to 2026)** |
-| **Student Project Archives** | Clunky redirect | **Tabbed on-demand explorer with student names & code links** |
-| **Organization Comparison** | ❌ Not available | **Side-by-side comparison matrix (up to 4 orgs)** |
-| **Shortlisting / Bookmarks** | ❌ Not available | **Saved target list with Markdown & CSV export** |
-| **Consistency Tracking** | Text only | **Visual participation timeline dots (11/11 years)** |
-| **Analytics & Insights** | Basic table | **Comprehensive 11-year trends, top tech & Hall of Fame** |
-| **Performance** | Multi-megabyte initial bundle | **Sub-50ms instant initial load + on-demand project loading** |
+- **Modern shadcn/ui Design System**: Dark / Light mode with Zinc & Orange theme tokens.
+- **Complete 11-Year Coverage**: All 519 organizations from 2016 through 2026.
+- **Detailed Student Project Archives**: 12,095 student projects with abstracts, student names, and code URLs.
+- **Side-by-Side Comparison Matrix**: Compare up to 4 organizations across years, slots, and tech stacks.
+- **Smart Shortlisting & Export**: Bookmark target organizations and export to Markdown or CSV.
+- **Visual Consistency Timeline**: 11-year participation history for every organization.
+- **11-Year Analytics & Insights**: Tech stack distributions, student capacity trends, and Veterans Hall of Fame.
+- **Ultra-Fast Performance**: Instant client-side fuzzy search with sub-50ms query speeds.
 
 ---
 
