@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/types.ts","./src/components/AnalyticsModal.tsx","./src/components/CompareModal.tsx","./src/components/FilterSidebar.tsx","./src/components/Navbar.tsx","./src/components/OrganizationCard.tsx","./src/components/OrganizationDetailModal.tsx","./src/components/ShortlistModal.tsx","./src/lib/utils.ts"],"version":"5.9.3"}

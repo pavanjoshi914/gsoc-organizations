@@ -3,6 +3,39 @@ export interface YearProjectStat {
   projects_url?: string;
 }
 
+export interface GoodFirstIssue {
+  number?: number;
+  title: string;
+  url: string;
+  repo: string;
+  labels: string[];
+  comments: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BeginnerScoreBreakdown {
+  issues_score: number; // out of 30
+  merge_rate_score: number; // out of 30
+  responsiveness_score: number; // out of 20
+  onboarding_score: number; // out of 20
+  pr_merge_rate_pct: number;
+  open_gfi_count: number;
+  response_time_desc: string;
+  has_contributing_guide: boolean;
+  has_ideas_list: boolean;
+  has_community_chat: boolean;
+  notes: string[];
+}
+
+export interface BeginnerFriendlinessData {
+  score: number; // 0 - 100
+  tier: 'Very High' | 'High' | 'Moderate' | 'Challenging';
+  github_repo?: string;
+  breakdown: BeginnerScoreBreakdown;
+  recent_issues: GoodFirstIssue[];
+}
+
 export interface OrganizationSummary {
   id: string;
   name: string;
@@ -22,6 +55,7 @@ export interface OrganizationSummary {
   mailing_list?: string;
   ideas_url?: string;
   guide_url?: string;
+  beginner_friendly?: BeginnerFriendlinessData;
 }
 
 export interface StudentProject {
@@ -53,6 +87,8 @@ export interface FilterState {
   onlyActiveLatest: boolean; // active in 2026
   veteransOnly: boolean; // 8+ years
   bookmarkedOnly: boolean;
-  sortBy: 'name' | 'projects-desc' | 'years-desc' | 'latest';
+  beginnerFriendlyOnly: boolean; // score 70+
+  selectedBeginnerTier: string | null; // 'all' | 'Very High' | 'High' | 'Moderate' | 'Challenging'
+  sortBy: 'name' | 'projects-desc' | 'years-desc' | 'latest' | 'beginner-desc';
 }
 

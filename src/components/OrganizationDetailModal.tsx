@@ -15,8 +15,14 @@ import {
   Loader2,
   CheckCircle2,
   Github,
+  Sprout,
+  GitPullRequest,
+  Clock,
+  Sparkles,
+  HelpCircle,
+  TrendingUp,
 } from 'lucide-react';
-import { OrganizationSummary, OrganizationDetail, YearDetail, StudentProject } from '../types';
+import { OrganizationSummary, OrganizationDetail, YearDetail, StudentProject, GoodFirstIssue } from '../types';
 
 interface OrganizationDetailModalProps {
   org: OrganizationSummary | null;
@@ -25,6 +31,7 @@ interface OrganizationDetailModalProps {
   isCompared: boolean;
   onToggleBookmark: (org: OrganizationSummary) => void;
   onToggleCompare: (org: OrganizationSummary) => void;
+  onOpenMethodology?: () => void;
 }
 
 export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = ({
@@ -34,14 +41,19 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
   isCompared,
   onToggleBookmark,
   onToggleCompare,
+  onOpenMethodology,
 }) => {
   const [detail, setDetail] = useState<OrganizationDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>('');
+  const [liveIssues, setLiveIssues] = useState<GoodFirstIssue[]>([]);
+  const [loadingIssues, setLoadingIssues] = useState(false);
+  const [issueError, setIssueError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!org) {
       setDetail(null);
+      setLiveIssues([]);
       return;
     }
 
@@ -64,6 +76,70 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
         console.error('Error fetching org detail:', err);
         setLoading(false);
       });
+
+    // Query live open Good First Issues directly from GitHub
+    const repo = org.beginner_friendly?.github_repo;
+    if (repo && repo.includes('/')) {
+      const cacheKey = `gfi_cache_${repo}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            setLiveIssues(parsed);
+            setLoadingIssues(false);
+            return;
+          }
+        } catch {
+          // ignore cache error
+        }
+      }
+
+      setLoadingIssues(true);
+      setIssueError(null);
+      fetch(
+        `https://api.github.com/repos/${repo}/issues?state=open&labels=good%20first%20issue&sort=updated&per_page=5`
+      )
+        .then((res) => {
+          if (!res.ok) throw new Error('GitHub API rate limited or unavailable');
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            // Filter out pull requests (GitHub issues API includes PRs unless filtered) and closed issues
+            const openList: GoodFirstIssue[] = data
+              .filter((item: any) => !item.pull_request && item.state === 'open')
+              .map((item: any) => ({
+                number: item.number,
+                title: item.title,
+                url: item.html_url,
+                repo: repo,
+                labels: (item.labels || []).map((l: any) =>
+                  typeof l === 'string' ? l : l.name
+                ),
+                comments: item.comments || 0,
+                created_at: item.created_at,
+                updated_at: item.updated_at,
+              }));
+            setLiveIssues(openList);
+            try {
+              sessionStorage.setItem(cacheKey, JSON.stringify(openList));
+            } catch {
+              // ignore quota
+            }
+          } else {
+            setLiveIssues([]);
+          }
+          setLoadingIssues(false);
+        })
+        .catch(() => {
+          setIssueError('GitHub rate limit reached or repository issues disabled');
+          setLoadingIssues(false);
+        });
+    } else {
+      setLiveIssues([]);
+      setLoadingIssues(false);
+    }
   }, [org]);
 
   if (!org) return null;
@@ -229,7 +305,7 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
           </div>
 
           {/* Technologies & Topics */}
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Technologies Used
@@ -238,7 +314,7 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
                 {org.technologies.map((tech) => (
                   <span
                     key={tech}
-                    className="rounded-md bg-muted px-2.5 py-1 text-xs font-mono text-foreground border border-border/60"
+                    className="rounded-md bg-card px-2.5 py-1 text-xs font-mono text-foreground border border-border"
                   >
                     {tech}
                   </span>
@@ -247,7 +323,7 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
             </div>
 
             {org.topics && org.topics.length > 0 && (
-              <div>
+              <div className="pt-2 border-t border-border/50">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Topics & Fields
                 </h4>
@@ -264,6 +340,292 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
               </div>
             )}
           </div>
+
+          {/* Beginner Friendliness & Community Health Section */}
+          {org.beginner_friendly && (
+            <div className="rounded-2xl border border-border/80 bg-muted/20 p-5 space-y-4">
+              {/* Header with Score and Tier */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border font-bold text-lg font-mono shadow-xs ${
+                      org.beginner_friendly.tier === 'Very High'
+                        ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                        : org.beginner_friendly.tier === 'High'
+                        ? 'bg-blue-500/15 text-blue-500 border-blue-500/30'
+                        : org.beginner_friendly.tier === 'Moderate'
+                        ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                        : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30'
+                    }`}
+                  >
+                    {org.beginner_friendly.score}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Beginner Friendliness Index
+                      </span>
+                      <span
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                          org.beginner_friendly.tier === 'Very High'
+                            ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                            : org.beginner_friendly.tier === 'High'
+                            ? 'bg-blue-500/15 text-blue-500 border-blue-500/30'
+                            : org.beginner_friendly.tier === 'Moderate'
+                            ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                            : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30'
+                        }`}
+                      >
+                        {org.beginner_friendly.tier} Tier
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Objective multi-factor score based on Good First Issues, merge rate, response latency, and onboarding guides.
+                    </p>
+                  </div>
+                </div>
+
+                {onOpenMethodology && (
+                  <button
+                    onClick={onOpenMethodology}
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors self-start sm:self-center bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg border border-primary/20"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    <span>How it's calculated</span>
+                  </button>
+                )}
+              </div>
+
+              {/* 4 Pillars Progress Meters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                {/* Pillar 1 */}
+                <div className="rounded-xl border border-border/60 bg-card p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Sprout className="h-3.5 w-3.5 text-emerald-500" />
+                      Good First Issues (30%)
+                    </span>
+                    <span className="font-mono text-muted-foreground font-medium">
+                      {org.beginner_friendly.breakdown.issues_score} / 30 pts
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(org.beginner_friendly.breakdown.issues_score / 30) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    {org.beginner_friendly.breakdown.open_gfi_count} beginner starter tasks tracked
+                  </span>
+                </div>
+
+                {/* Pillar 2 */}
+                <div className="rounded-xl border border-border/60 bg-card p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <GitPullRequest className="h-3.5 w-3.5 text-blue-500" />
+                      PR Merge Rate (30%)
+                    </span>
+                    <span className="font-mono text-muted-foreground font-medium">
+                      {org.beginner_friendly.breakdown.merge_rate_score} / 30 pts
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(org.beginner_friendly.breakdown.merge_rate_score / 30) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    {org.beginner_friendly.breakdown.pr_merge_rate_pct}% newcomer pull requests merged
+                  </span>
+                </div>
+
+                {/* Pillar 3 */}
+                <div className="rounded-xl border border-border/60 bg-card p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-amber-500" />
+                      Maintainer Response (20%)
+                    </span>
+                    <span className="font-mono text-muted-foreground font-medium">
+                      {org.beginner_friendly.breakdown.responsiveness_score} / 20 pts
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(org.beginner_friendly.breakdown.responsiveness_score / 20) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    Turnaround: {org.beginner_friendly.breakdown.response_time_desc}
+                  </span>
+                </div>
+
+                {/* Pillar 4 */}
+                <div className="rounded-xl border border-border/60 bg-card p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <BookOpen className="h-3.5 w-3.5 text-purple-500" />
+                      Onboarding & Guides (20%)
+                    </span>
+                    <span className="font-mono text-muted-foreground font-medium">
+                      {org.beginner_friendly.breakdown.onboarding_score} / 20 pts
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(org.beginner_friendly.breakdown.onboarding_score / 20) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block">
+                    Guide: {org.beginner_friendly.breakdown.has_contributing_guide ? '✓ Yes' : '— No'} · Chat: {org.beginner_friendly.breakdown.has_community_chat ? '✓ Yes' : '— No'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actionable Notes Bullet Points */}
+              {org.beginner_friendly.breakdown.notes && org.beginner_friendly.breakdown.notes.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {org.beginner_friendly.breakdown.notes.map((note, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-card/80 px-2.5 py-1 text-[11px] text-foreground/80 border border-border/50"
+                    >
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      <span>{note}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Live Active Good First Issues / GitHub Search Link */}
+              <div className="pt-2 border-t border-border/40">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h5 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <span>Live Open Good First Issues</span>
+                    {liveIssues.length > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-500 px-2 py-0.5 text-[10px] font-mono font-semibold">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {liveIssues.length} active open
+                      </span>
+                    )}
+                  </h5>
+
+                  {org.beginner_friendly.github_repo && (
+                    <a
+                      href={`https://github.com/${org.beginner_friendly.github_repo}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <span>Search on GitHub</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+
+                {loadingIssues ? (
+                  <div className="flex items-center justify-center py-6 gap-2 rounded-xl border border-dashed border-border/80 bg-card/40 text-muted-foreground text-xs">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span>Querying GitHub API for open beginner issues in {org.beginner_friendly.github_repo}...</span>
+                  </div>
+                ) : liveIssues.length > 0 ? (
+                  <div className="space-y-2">
+                    {liveIssues.map((issue, idx) => (
+                      <a
+                        key={idx}
+                        href={issue.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-border/70 bg-card p-3 hover:border-primary/50 transition-colors shadow-2xs"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                            {issue.number ? (
+                              <span className="font-mono text-muted-foreground mr-1.5 font-normal">
+                                #{issue.number}
+                              </span>
+                            ) : null}
+                            {issue.title}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                            <span className="text-primary font-medium">{issue.repo}</span>
+                            {issue.labels &&
+                              issue.labels.map((lbl: string, lIdx: number) => (
+                                <span
+                                  key={lIdx}
+                                  className="rounded bg-muted px-1.5 py-0.2 text-muted-foreground"
+                                >
+                                  {lbl}
+                                </span>
+                              ))}
+                            {issue.updated_at && (
+                              <span className="text-[10px] text-muted-foreground">
+                                • Updated {new Date(issue.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <span className="text-[10px] text-muted-foreground">
+                            {issue.comments} comment{issue.comments === 1 ? '' : 's'}
+                          </span>
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/80 bg-card/50 p-4 text-center space-y-2.5">
+                    <p className="text-xs text-muted-foreground">
+                      {org.beginner_friendly.github_repo
+                        ? `No open issues currently tagged "good first issue" in ${org.beginner_friendly.github_repo}. Search all open newcomer tasks:`
+                        : "Browse open beginner issues directly on this organization's official repository:"}
+                    </p>
+                    {org.beginner_friendly.github_repo ? (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <a
+                          href={`https://github.com/${org.beginner_friendly.github_repo}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 px-3 py-1.5 text-xs font-semibold transition-colors"
+                        >
+                          <Github className="h-3.5 w-3.5" />
+                          <span>Search "good first issue" on GitHub</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <a
+                          href={`https://github.com/${org.beginner_friendly.github_repo}/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 px-3 py-1.5 text-xs font-semibold transition-colors"
+                        >
+                          <Github className="h-3.5 w-3.5" />
+                          <span>Search "help wanted" on GitHub</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    ) : (
+                      <a
+                        href={org.ideas_url || org.guide_url || org.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 px-3 py-1.5 text-xs font-semibold transition-colors"
+                      >
+                        <Globe className="h-3.5 w-3.5" />
+                        <span>Visit Contributor / Ideas Page</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Year-by-Year Project Archive */}
           <div className="space-y-4 pt-4 border-t border-border">

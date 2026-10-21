@@ -22,15 +22,22 @@ import { OrganizationDetailModal } from './components/OrganizationDetailModal';
 import { CompareModal } from './components/CompareModal';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { ShortlistModal } from './components/ShortlistModal';
+import { BeginnerMethodologyModal } from './components/BeginnerMethodologyModal';
 
 export const App: React.FC = () => {
   const [organizations, setOrganizations] = useState<OrganizationSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Theme
+  // Theme (Dark mode default)
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('gsoc_theme');
-    return saved ? saved === 'dark' : true;
+    try {
+      const saved = localStorage.getItem('gsoc_theme_preference');
+      if (saved) return saved === 'dark';
+      // Always default to dark mode
+      return true;
+    } catch {
+      return true;
+    }
   });
 
   // Filters
@@ -44,6 +51,8 @@ export const App: React.FC = () => {
     onlyActiveLatest: false,
     veteransOnly: false,
     bookmarkedOnly: false,
+    beginnerFriendlyOnly: false,
+    selectedBeginnerTier: null,
     sortBy: 'name',
   });
 
@@ -67,6 +76,7 @@ export const App: React.FC = () => {
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showShortlistModal, setShowShortlistModal] = useState(false);
+  const [showMethodologyModal, setShowMethodologyModal] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   // Pagination (load 24 per page for instant smooth rendering)
@@ -77,9 +87,11 @@ export const App: React.FC = () => {
     const root = document.documentElement;
     if (darkMode) {
       root.classList.add('dark');
+      localStorage.setItem('gsoc_theme_preference', 'dark');
       localStorage.setItem('gsoc_theme', 'dark');
     } else {
       root.classList.remove('dark');
+      localStorage.setItem('gsoc_theme_preference', 'light');
       localStorage.setItem('gsoc_theme', 'light');
     }
   }, [darkMode]);
@@ -210,6 +222,16 @@ export const App: React.FC = () => {
           if (!matchesAllTech) return false;
         }
 
+        // Beginner Friendliness filter
+        if (filters.beginnerFriendlyOnly && (org.beginner_friendly?.score || 0) < 70) {
+          return false;
+        }
+
+        // Beginner Tier filter
+        if (filters.selectedBeginnerTier && org.beginner_friendly?.tier !== filters.selectedBeginnerTier) {
+          return false;
+        }
+
         // Quick Highlights
         if (filters.onlyActiveLatest && !org.years.includes('2026')) {
           return false;
@@ -226,6 +248,9 @@ export const App: React.FC = () => {
         return true;
       })
       .sort((a, b) => {
+        if (filters.sortBy === 'beginner-desc') {
+          return (b.beginner_friendly?.score || 0) - (a.beginner_friendly?.score || 0);
+        }
         if (filters.sortBy === 'projects-desc') {
           return b.total_projects - a.total_projects;
         }
@@ -267,6 +292,7 @@ export const App: React.FC = () => {
         onOpenBookmarks={() => setShowShortlistModal(true)}
         onOpenCompare={() => setShowCompareModal(true)}
         onOpenAnalytics={() => setShowAnalyticsModal(true)}
+        onOpenMethodology={() => setShowMethodologyModal(true)}
         darkMode={darkMode}
         onToggleTheme={() => setDarkMode(!darkMode)}
         totalOrgsCount={organizations.length}
@@ -283,8 +309,16 @@ export const App: React.FC = () => {
               placeholder="Search organizations or tech..."
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              className="w-full rounded-xl border border-border bg-card py-2 pl-9 pr-3 text-sm text-foreground focus:border-primary focus:outline-none"
+              className="w-full rounded-xl border border-border bg-card py-2 pl-9 pr-14 text-sm text-foreground focus:border-primary focus:outline-none"
             />
+            {filters.search && (
+              <button
+                onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
 
           <button
@@ -343,6 +377,7 @@ export const App: React.FC = () => {
             totalAllCount={organizations.length}
             isOpenMobile={showMobileFilter}
             onCloseMobile={() => setShowMobileFilter(false)}
+            onOpenMethodology={() => setShowMethodologyModal(true)}
           />
 
           {/* Organization Cards Feed */}
@@ -354,8 +389,10 @@ export const App: React.FC = () => {
               filters.onlyActiveLatest ||
               filters.veteransOnly ||
               filters.bookmarkedOnly ||
+              filters.beginnerFriendlyOnly ||
+              filters.selectedBeginnerTier ||
               filters.search) && (
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs select-none">
                 <span className="text-muted-foreground font-medium">Active:</span>
 
                 {filters.search && (
@@ -364,6 +401,30 @@ export const App: React.FC = () => {
                     <button
                       onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
                       className="hover:text-primary"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+
+                {filters.beginnerFriendlyOnly && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-1 font-medium">
+                    Beginner Friendly (70+)
+                    <button
+                      onClick={() => setFilters((prev) => ({ ...prev, beginnerFriendlyOnly: false }))}
+                      className="hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+
+                {filters.selectedBeginnerTier && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-2 py-1 font-medium">
+                    Tier: {filters.selectedBeginnerTier}
+                    <button
+                      onClick={() => setFilters((prev) => ({ ...prev, selectedBeginnerTier: null }))}
+                      className="hover:text-foreground"
                     >
                       ×
                     </button>
@@ -470,6 +531,8 @@ export const App: React.FC = () => {
                       onlyActiveLatest: false,
                       veteransOnly: false,
                       bookmarkedOnly: false,
+                      beginnerFriendlyOnly: false,
+                      selectedBeginnerTier: null,
                       sortBy: 'name',
                     })
                   }
@@ -518,6 +581,7 @@ export const App: React.FC = () => {
                       onSelect={(target) => setSelectedOrg(target)}
                       onFilterByTech={handleFilterByTech}
                       onFilterByYear={handleFilterByYear}
+                      onOpenMethodology={() => setShowMethodologyModal(true)}
                     />
                   ))}
                 </div>
@@ -540,7 +604,7 @@ export const App: React.FC = () => {
               </>
             ) : (
               /* Empty State */
-              <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+              <div className="rounded-2xl border border-dashed border-border p-12 text-center select-none cursor-default">
                 <Layers className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
                 <h3 className="text-lg font-bold text-foreground">No organizations match your criteria</h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1 mb-4">
@@ -558,10 +622,12 @@ export const App: React.FC = () => {
                       onlyActiveLatest: false,
                       veteransOnly: false,
                       bookmarkedOnly: false,
+                      beginnerFriendlyOnly: false,
+                      selectedBeginnerTier: null,
                       sortBy: 'name',
                     })
                   }
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   <span>Reset All Filters</span>
@@ -664,6 +730,7 @@ export const App: React.FC = () => {
         isCompared={selectedOrg ? comparedIds.includes(selectedOrg.id) : false}
         onToggleBookmark={toggleBookmark}
         onToggleCompare={toggleCompare}
+        onOpenMethodology={() => setShowMethodologyModal(true)}
       />
 
       {showCompareModal && (
@@ -694,6 +761,11 @@ export const App: React.FC = () => {
           onSelectOrg={(org) => setSelectedOrg(org)}
         />
       )}
+
+      <BeginnerMethodologyModal
+        isOpen={showMethodologyModal}
+        onClose={() => setShowMethodologyModal(false)}
+      />
     </div>
   );
 };

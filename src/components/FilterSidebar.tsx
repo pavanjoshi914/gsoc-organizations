@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Filter, X, RotateCcw, Search, Check, Layers, Calendar, Code, Cpu } from 'lucide-react';
+import { Filter, X, RotateCcw, Search, Check, Layers, Calendar, Code, Cpu, Sprout, HelpCircle } from 'lucide-react';
 import { FilterState } from '../types';
 
 interface FilterSidebarProps {
@@ -12,6 +12,7 @@ interface FilterSidebarProps {
   totalAllCount: number;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  onOpenMethodology?: () => void;
 }
 
 export const FilterSidebar: React.FC<FilterSidebarProps> = ({
@@ -24,6 +25,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   totalAllCount,
   isOpenMobile,
   onCloseMobile,
+  onOpenMethodology,
 }) => {
   const [techSearch, setTechSearch] = useState('');
 
@@ -54,6 +56,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       onlyActiveLatest: false,
       veteransOnly: false,
       bookmarkedOnly: false,
+      beginnerFriendlyOnly: false,
+      selectedBeginnerTier: null,
       sortBy: 'name',
     });
   };
@@ -65,7 +69,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     filters.selectedTech.length > 0 ||
     filters.onlyActiveLatest ||
     filters.veteransOnly ||
-    filters.bookmarkedOnly;
+    filters.bookmarkedOnly ||
+    filters.beginnerFriendlyOnly ||
+    filters.selectedBeginnerTier !== null;
 
   const filteredTechList = topTechnologiesWithCounts.filter((item) =>
     item.tech.toLowerCase().includes(techSearch.toLowerCase())
@@ -83,7 +89,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-80 transform bg-card border-r border-border p-5 transition-transform duration-300 ease-in-out lg:static lg:block lg:w-72 lg:translate-x-0 lg:p-0 lg:border-none lg:bg-transparent ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 transform bg-card border-r border-border p-5 select-none cursor-default transition-transform duration-300 ease-in-out lg:static lg:block lg:w-72 lg:translate-x-0 lg:p-0 lg:border-none lg:bg-transparent ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -92,7 +98,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground tracking-wide uppercase">
+              <h2 className="text-sm font-semibold text-foreground tracking-wide uppercase select-none">
                 Filter & Sort
               </h2>
             </div>
@@ -100,7 +106,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               {hasActiveFilters && (
                 <button
                   onClick={resetFilters}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                   title="Reset all filters"
                 >
                   <RotateCcw className="h-3 w-3" />
@@ -109,7 +115,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               )}
               <button
                 onClick={onCloseMobile}
-                className="rounded-md p-1 text-muted-foreground hover:bg-muted lg:hidden"
+                className="rounded-md p-1 text-muted-foreground hover:bg-muted lg:hidden cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -117,7 +123,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           </div>
 
           {/* Result Count Banner */}
-          <div className="rounded-lg bg-muted/60 p-2.5 text-xs text-muted-foreground border border-border/50 flex justify-between items-center">
+          <div className="rounded-lg bg-muted/60 p-2.5 text-xs text-muted-foreground border border-border/50 flex justify-between items-center select-none cursor-default">
             <span>Showing organizations:</span>
             <span className="font-bold text-foreground">
               {totalFilteredCount} <span className="font-normal text-muted-foreground">/ {totalAllCount}</span>
@@ -130,6 +136,19 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               Quick Highlights
             </span>
             <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none rounded-md px-2 py-1.5 hover:bg-muted transition-colors">
+                <input
+                  type="checkbox"
+                  checked={filters.beginnerFriendlyOnly}
+                  onChange={(e) => onChange({ ...filters, beginnerFriendlyOnly: e.target.checked })}
+                  className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 accent-primary"
+                />
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                  <Sprout className="h-3.5 w-3.5" />
+                  Beginner Friendly Only (70+)
+                </span>
+              </label>
+
               <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none rounded-md px-2 py-1.5 hover:bg-muted transition-colors">
                 <input
                   type="checkbox"
@@ -162,6 +181,51 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             </div>
           </div>
 
+          {/* Beginner Friendliness Tiers */}
+          <div className="space-y-2 border-t border-border/50 pt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Sprout className="h-3.5 w-3.5 text-emerald-500" />
+                Beginner Tier
+              </span>
+              {onOpenMethodology && (
+                <button
+                  type="button"
+                  onClick={onOpenMethodology}
+                  className="text-[11px] text-primary hover:text-primary/80 font-medium flex items-center gap-0.5 transition-colors"
+                  title="Learn how Beginner Friendliness is scored"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  <span>Formula</span>
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { label: 'All Tiers', value: null, countColor: 'text-foreground' },
+                { label: 'Very High (85+)', value: 'Very High', countColor: 'text-emerald-500' },
+                { label: 'High (70–84)', value: 'High', countColor: 'text-blue-500' },
+                { label: 'Moderate (50–69)', value: 'Moderate', countColor: 'text-amber-500' },
+                { label: 'Challenging (<50)', value: 'Challenging', countColor: 'text-zinc-400' },
+              ].map((tierItem) => {
+                const isSelected = filters.selectedBeginnerTier === tierItem.value;
+                return (
+                  <button
+                    key={tierItem.label}
+                    onClick={() => onChange({ ...filters, selectedBeginnerTier: isSelected && tierItem.value !== null ? null : tierItem.value })}
+                    className={`rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all text-left truncate ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                        : 'border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {tierItem.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Sort By */}
           <div className="space-y-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -170,8 +234,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             <select
               value={filters.sortBy}
               onChange={(e) => onChange({ ...filters, sortBy: e.target.value as FilterState['sortBy'] })}
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-medium"
             >
+              <option value="beginner-desc">🌿 Beginner Friendly (Highest First)</option>
               <option value="name">Name (A to Z)</option>
               <option value="projects-desc">Total Projects / Slots (Highest First)</option>
               <option value="years-desc">Consistency (Most Years Active)</option>

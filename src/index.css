@@ -68,3 +68,13 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
+/* Prevent unwanted text selection and caret cursors on UI controls and cards */
+button,
+label,
+select,
+[role="button"],
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
