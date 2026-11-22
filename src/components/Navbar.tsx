@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  EyeOff,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -20,8 +21,10 @@ interface NavbarProps {
   onSearchChange: (query: string) => void;
   bookmarkedCount: number;
   compareCount: number;
+  hiddenCount?: number;
   onOpenBookmarks: () => void;
   onOpenCompare: () => void;
+  onOpenHidden?: () => void;
   onOpenAnalytics: () => void;
   onOpenMethodology?: () => void;
   darkMode: boolean;
@@ -34,8 +37,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSearchChange,
   bookmarkedCount,
   compareCount,
+  hiddenCount = 0,
   onOpenBookmarks,
   onOpenCompare,
+  onOpenHidden,
   onOpenAnalytics,
   onOpenMethodology,
   darkMode,
@@ -165,6 +170,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
+          {/* Hidden Organizations */}
+          {onOpenHidden && (
+            <button
+              onClick={onOpenHidden}
+              className={`relative flex h-9 items-center gap-1.5 rounded-lg border px-2.5 sm:px-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                hiddenCount > 0
+                  ? 'border-border bg-card text-foreground hover:bg-muted'
+                  : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+              } ${hiddenCount > 0 ? '' : 'hidden lg:flex'}`}
+              title={hiddenCount > 0 ? `Manage hidden organizations (${hiddenCount})` : 'Hidden organizations'}
+              aria-label="Hidden Organizations"
+            >
+              <EyeOff className="h-4 w-4 shrink-0" />
+              <span className="hidden xl:inline">Hidden</span>
+              {hiddenCount > 0 && (
+                <span className="flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-muted-foreground/20 text-[11px] font-bold text-foreground shrink-0">
+                  {hiddenCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Beginner Friendly Methodology (hidden on mobile, in more menu) */}
           {onOpenMethodology && (
             <button
@@ -249,6 +276,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>Beginner Friendliness Guide & Formula</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+
+          {onOpenHidden && (
+            <button
+              onClick={() => {
+                onOpenHidden();
+                setMobileMenuOpen(false);
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                <span>Hidden Organizations</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {hiddenCount > 0 && (
+                  <span className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-mono font-bold text-foreground">
+                    {hiddenCount}
+                  </span>
+                )}
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
             </button>
           )}
 
