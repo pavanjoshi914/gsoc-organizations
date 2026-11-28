@@ -44,7 +44,7 @@ export const OrganizationCard: React.FC<OrganizationCardProps> = ({
           onSelect(org);
         }
       }}
-      className="group relative flex flex-col justify-between rounded-xl border border-border/70 bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 cursor-pointer select-none"
+      className="group relative flex min-w-0 flex-col justify-between rounded-xl border border-border/70 bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 cursor-pointer select-none"
     >
       {/* Top Header */}
       <div>
@@ -135,7 +135,7 @@ export const OrganizationCard: React.FC<OrganizationCardProps> = ({
                 e.stopPropagation();
                 onSelect(org);
               }}
-              className="font-bold text-base sm:text-lg text-foreground tracking-tight hover:text-primary transition-colors cursor-pointer leading-snug line-clamp-2"
+              className="min-w-0 break-words font-bold text-base sm:text-lg text-foreground tracking-tight hover:text-primary transition-colors cursor-pointer leading-snug line-clamp-2"
               title={org.name}
             >
               {org.name}
@@ -269,7 +269,7 @@ export const OrganizationCard: React.FC<OrganizationCardProps> = ({
                   e.stopPropagation();
                   onFilterByTech(tech);
                 }}
-                className="rounded-md bg-muted/60 px-2 py-0.5 text-[10px] font-mono text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors border border-border/40 cursor-pointer"
+                className="max-w-full truncate rounded-md bg-muted/60 px-2 py-0.5 text-[10px] font-mono text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors border border-border/40 cursor-pointer"
               >
                 {tech}
               </button>

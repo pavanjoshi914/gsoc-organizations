@@ -108,8 +108,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Global Search Bar (Guaranteed minimum width so text is always fully visible) */}
-        <div className="relative flex-1 min-w-[200px] sm:min-w-[240px] md:min-w-[280px] max-w-xs lg:max-w-sm xl:max-w-md hidden md:block mx-2">
+        {/* Global Search Bar */}
+        <div className="relative flex-1 min-w-0 max-w-xs lg:max-w-sm xl:max-w-md hidden lg:block mx-2">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             type="text"
@@ -201,8 +201,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               aria-label="Beginner Guide"
             >
               <Sprout className="h-4 w-4 text-emerald-500 shrink-0" />
-              <span className="inline xl:hidden">Guide</span>
-              <span className="hidden xl:inline">Beginner Guide</span>
+              <span className="inline 2xl:hidden">Guide</span>
+              <span className="hidden 2xl:inline">Beginner Guide</span>
             </button>
           )}
 
@@ -227,7 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label="Star GSoC Archive on GitHub"
           >
             <Github className="h-4 w-4 text-foreground group-hover:text-primary transition-colors shrink-0" />
-            <span className="hidden xl:inline font-semibold">GSoC Archive</span>
+            <span className="hidden 2xl:inline font-semibold">GSoC Archive</span>
             <span className="flex items-center gap-1 rounded bg-muted/80 group-hover:bg-amber-500/15 group-hover:text-amber-500 px-1.5 py-0.5 text-[11px] font-mono font-bold text-muted-foreground transition-colors shrink-0">
               <Star className="h-3 w-3 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" />
               <span>{starCount !== null ? starCount : 'Star'}</span>

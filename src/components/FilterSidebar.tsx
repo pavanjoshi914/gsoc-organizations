@@ -95,7 +95,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-80 transform bg-card border-r border-border p-5 select-none cursor-default transition-transform duration-300 ease-in-out lg:static lg:block lg:w-72 lg:translate-x-0 lg:p-0 lg:border-none lg:bg-transparent ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] transform bg-card border-r border-border p-5 select-none cursor-default transition-transform duration-300 ease-in-out lg:static lg:block lg:w-72 lg:max-w-none lg:translate-x-0 lg:p-0 lg:border-none lg:bg-transparent ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

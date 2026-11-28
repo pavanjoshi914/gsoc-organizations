@@ -372,7 +372,7 @@ export const App: React.FC = () => {
   }, [filters]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans overflow-x-clip">
       {/* Top Navbar */}
       <Navbar
         searchQuery={filters.search}
@@ -394,7 +394,7 @@ export const App: React.FC = () => {
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         {/* Mobile Search & Filter Toolbar */}
         <div className="flex items-center gap-2 mb-6 lg:hidden">
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -439,7 +439,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Quick Hero Counters */}
-            <div className="flex items-center gap-4 sm:gap-6 border-t md:border-t-0 md:border-l border-border/80 pt-4 md:pt-0 md:pl-6 shrink-0">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 border-t md:border-t-0 md:border-l border-border/80 pt-4 md:pt-0 md:pl-6 shrink-0">
               <div>
                 <span className="text-2xl sm:text-3xl font-black text-foreground font-mono">519</span>
                 <p className="text-xs text-muted-foreground">Organizations</p>
@@ -778,7 +778,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Social Links */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <a
                 href="https://github.com/pavanjoshi914"
                 target="_blank"
