@@ -13,6 +13,7 @@ Built with **React 19**, **TypeScript**, **Tailwind CSS**, and **shadcn/ui** des
 - **Detailed Student Project Archives**: 12,095 student projects with abstracts, student names, and code URLs.
 - **Side-by-Side Comparison Matrix**: Compare up to 4 organizations across years, slots, and tech stacks.
 - **Smart Shortlisting & Export**: Bookmark target organizations and export to Markdown or CSV.
+- **Persistent Organization Blacklisting**: Hide organizations to exclude them across searches, filters, years, and sessions, with easy restoration and undo support.
 - **Visual Consistency Timeline**: 11-year participation history for every organization.
 - **11-Year Analytics & Insights**: Tech stack distributions, student capacity trends, and Veterans Hall of Fame.
 - **Ultra-Fast Performance**: Instant client-side fuzzy search with sub-50ms query speeds.
@@ -28,7 +29,6 @@ Built with **React 19**, **TypeScript**, **Tailwind CSS**, and **shadcn/ui** des
 
 ### Directory Structure:
 ```
-/data/codebases/macos app/gsoc-organizations/
 ├── public/
 │   └── data/
 │       ├── organizations.json   (Minified index of all 519 orgs for instant search)
@@ -41,10 +41,16 @@ Built with **React 19**, **TypeScript**, **Tailwind CSS**, and **shadcn/ui** des
 │   │   ├── OrganizationDetailModal.tsx
 │   │   ├── CompareModal.tsx
 │   │   ├── AnalyticsModal.tsx
-│   │   └── ShortlistModal.tsx
+│   │   ├── ShortlistModal.tsx
+│   │   └── HiddenOrganizationsModal.tsx
+│   ├── lib/
+│   │   ├── blacklist.ts
+│   │   └── utils.ts
 │   ├── types.ts
 │   ├── App.tsx
 │   └── main.tsx
+├── tests/
+│   └── blacklist.test.ts
 ├── package.json
 └── run.sh
 ```

@@ -21,6 +21,8 @@ import {
   Sparkles,
   HelpCircle,
   TrendingUp,
+  EyeOff,
+  RotateCcw,
 } from 'lucide-react';
 import { OrganizationSummary, OrganizationDetail, YearDetail, StudentProject, GoodFirstIssue } from '../types';
 
@@ -29,8 +31,10 @@ interface OrganizationDetailModalProps {
   onClose: () => void;
   isBookmarked: boolean;
   isCompared: boolean;
+  isBlacklisted?: boolean;
   onToggleBookmark: (org: OrganizationSummary) => void;
   onToggleCompare: (org: OrganizationSummary) => void;
+  onToggleHide?: (org: OrganizationSummary) => void;
   onOpenMethodology?: () => void;
 }
 
@@ -39,8 +43,10 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
   onClose,
   isBookmarked,
   isCompared,
+  isBlacklisted = false,
   onToggleBookmark,
   onToggleCompare,
+  onToggleHide,
   onOpenMethodology,
 }) => {
   const [detail, setDetail] = useState<OrganizationDetail | null>(null);
@@ -208,6 +214,21 @@ export const OrganizationDetailModal: React.FC<OrganizationDetailModalProps> = (
               >
                 <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-amber-500' : ''}`} />
               </button>
+
+              {onToggleHide && (
+                <button
+                  onClick={() => onToggleHide(org)}
+                  className={`rounded-lg p-2 transition-colors ${
+                    isBlacklisted
+                      ? 'bg-red-500/15 text-red-500'
+                      : 'bg-muted text-muted-foreground hover:text-destructive'
+                  }`}
+                  title={isBlacklisted ? 'Restore organization to results' : 'Hide organization from results'}
+                  aria-label={isBlacklisted ? 'Restore organization' : 'Hide organization'}
+                >
+                  {isBlacklisted ? <RotateCcw className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                </button>
+              )}
 
               <button
                 onClick={onClose}

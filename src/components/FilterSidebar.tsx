@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Filter, X, RotateCcw, Search, Check, Layers, Calendar, Code, Cpu, Sprout, HelpCircle } from 'lucide-react';
+import { Filter, X, RotateCcw, Search, Check, Layers, Calendar, Code, Cpu, Sprout, HelpCircle, EyeOff } from 'lucide-react';
 import { FilterState } from '../types';
 
 interface FilterSidebarProps {
@@ -10,6 +10,9 @@ interface FilterSidebarProps {
   allYears: string[];
   totalFilteredCount: number;
   totalAllCount: number;
+  hiddenCount?: number;
+  onOpenHidden?: () => void;
+  onRestoreAll?: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   onOpenMethodology?: () => void;
@@ -23,6 +26,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   allYears,
   totalFilteredCount,
   totalAllCount,
+  hiddenCount = 0,
+  onOpenHidden,
+  onRestoreAll,
   isOpenMobile,
   onCloseMobile,
   onOpenMethodology,
@@ -129,6 +135,51 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               {totalFilteredCount} <span className="font-normal text-muted-foreground">/ {totalAllCount}</span>
             </span>
           </div>
+
+          {/* Hidden Organizations Management */}
+          {hiddenCount > 0 && onOpenHidden ? (
+            <div className="rounded-lg border border-border/70 bg-card p-2.5 text-xs shadow-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>Hidden ({hiddenCount})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenHidden}
+                  className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                >
+                  Manage
+                </button>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                <span>Excluded from results</span>
+                {onRestoreAll && (
+                  <button
+                    type="button"
+                    onClick={onRestoreAll}
+                    className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    title="Restore all hidden organizations"
+                  >
+                    Restore all
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : onOpenHidden ? (
+            <button
+              type="button"
+              onClick={onOpenHidden}
+              className="flex items-center justify-between w-full rounded-lg border border-dashed border-border/70 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors cursor-pointer"
+              title="Manage hidden organizations"
+            >
+              <span className="flex items-center gap-1.5">
+                <EyeOff className="h-3 w-3" />
+                <span>Hidden Organizations</span>
+              </span>
+              <span className="font-mono text-[10px]">0</span>
+            </button>
+          ) : null}
 
           {/* Quick Filters */}
           <div className="space-y-2">

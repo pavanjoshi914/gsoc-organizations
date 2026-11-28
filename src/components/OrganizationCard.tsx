@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bookmark, Scale, FolderGit2, ArrowRight, Sprout } from 'lucide-react';
+import { Bookmark, Scale, FolderGit2, ArrowRight, Sprout, EyeOff } from 'lucide-react';
 import { OrganizationSummary } from '../types';
 
 interface OrganizationCardProps {
@@ -9,6 +9,7 @@ interface OrganizationCardProps {
   selectedYears?: string[];
   onToggleBookmark: (org: OrganizationSummary) => void;
   onToggleCompare: (org: OrganizationSummary) => void;
+  onHide: (org: OrganizationSummary) => void;
   onSelect: (org: OrganizationSummary) => void;
   onFilterByTech: (tech: string) => void;
   onFilterByYear?: (year: string) => void;
@@ -22,6 +23,7 @@ export const OrganizationCard: React.FC<OrganizationCardProps> = ({
   selectedYears = [],
   onToggleBookmark,
   onToggleCompare,
+  onHide,
   onSelect,
   onFilterByTech,
   onFilterByYear,
@@ -74,7 +76,7 @@ export const OrganizationCard: React.FC<OrganizationCardProps> = ({
             )}
           </div>
 
-          {/* Actions: Compare & Bookmark */}
+          {/* Actions: Compare, Bookmark & Hide */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-1.5 shrink-0 bg-muted/40 p-1 rounded-xl border border-border/40"
@@ -109,6 +111,18 @@ export const OrganizationCard: React.FC<OrganizationCardProps> = ({
               aria-label="Bookmark organization"
             >
               <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-amber-500' : ''}`} />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onHide(org);
+              }}
+              className="rounded-lg p-2 transition-colors cursor-pointer text-muted-foreground hover:bg-muted hover:text-destructive"
+              title="Hide organization from results"
+              aria-label={`Hide ${org.name}`}
+            >
+              <EyeOff className="h-4 w-4" />
             </button>
           </div>
         </div>

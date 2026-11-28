@@ -13,6 +13,8 @@ import {
   Twitter,
   Linkedin,
   Heart,
+  EyeOff,
+  X,
 } from 'lucide-react';
 import { OrganizationSummary, FilterState } from './types';
 import { Navbar } from './components/Navbar';
@@ -23,6 +25,13 @@ import { CompareModal } from './components/CompareModal';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { ShortlistModal } from './components/ShortlistModal';
 import { BeginnerMethodologyModal } from './components/BeginnerMethodologyModal';
+import { HiddenOrganizationsModal } from './components/HiddenOrganizationsModal';
+import {
+  loadHiddenOrgIds,
+  saveHiddenOrgIds,
+  hideOrgId,
+  restoreOrgId,
+} from './lib/blacklist';
 
 export const App: React.FC = () => {
   const [organizations, setOrganizations] = useState<OrganizationSummary[]>([]);
@@ -66,6 +75,9 @@ export const App: React.FC = () => {
     }
   });
 
+  // Blacklist / Hidden Organizations
+  const [hiddenOrgIds, setHiddenOrgIds] = useState<string[]>(() => loadHiddenOrgIds());
+
   // Compare List
   const [comparedIds, setComparedIds] = useState<string[]>([]);
 
@@ -77,7 +89,15 @@ export const App: React.FC = () => {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showShortlistModal, setShowShortlistModal] = useState(false);
   const [showMethodologyModal, setShowMethodologyModal] = useState(false);
+  const [showHiddenModal, setShowHiddenModal] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  // Toast feedback state
+  const [toast, setToast] = useState<{
+    orgName: string;
+    orgId: string;
+    type: 'hide' | 'restore';
+  } | null>(null);
 
   // Pagination (load 24 per page for instant smooth rendering)
   const [visibleCount, setVisibleCount] = useState(24);
@@ -100,6 +120,20 @@ export const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('gsoc_bookmarks', JSON.stringify(bookmarkedIds));
   }, [bookmarkedIds]);
+
+  // Save hidden organizations
+  useEffect(() => {
+    saveHiddenOrgIds(hiddenOrgIds);
+  }, [hiddenOrgIds]);
+
+  // Auto-dismiss toast notification after 5 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Load organizations dataset
   useEffect(() => {
@@ -189,10 +223,61 @@ export const App: React.FC = () => {
     });
   };
 
+  // Blacklist / Hide Org Handler
+  const handleHideOrg = (org: OrganizationSummary) => {
+    setHiddenOrgIds((prev) => hideOrgId(org.id, prev));
+    setComparedIds((prev) => prev.filter((id) => id !== org.id));
+    if (selectedOrg?.id === org.id) {
+      setSelectedOrg(null);
+    }
+    setToast({
+      orgName: org.name,
+      orgId: org.id,
+      type: 'hide',
+    });
+  };
+
+  // Restore Single Org Handler
+  const handleRestoreOrg = (org: OrganizationSummary) => {
+    setHiddenOrgIds((prev) => restoreOrgId(org.id, prev));
+    setToast({
+      orgName: org.name,
+      orgId: org.id,
+      type: 'restore',
+    });
+  };
+
+  // Restore All Hidden Orgs Handler
+  const handleRestoreAll = () => {
+    const count = hiddenOrgIds.length;
+    setHiddenOrgIds([]);
+    setToast({
+      orgName: `${count} organization${count !== 1 ? 's' : ''}`,
+      orgId: '',
+      type: 'restore',
+    });
+  };
+
+  // Undo Toast Action
+  const handleUndoToast = () => {
+    if (!toast) return;
+    if (toast.type === 'hide') {
+      setHiddenOrgIds((prev) => restoreOrgId(toast.orgId, prev));
+    } else if (toast.type === 'restore' && toast.orgId) {
+      setHiddenOrgIds((prev) => hideOrgId(toast.orgId, prev));
+    }
+    setToast(null);
+  };
+
   // Filtered & Sorted Organizations
   const filteredOrganizations = useMemo(() => {
     return organizations
       .filter((org) => {
+        // Exclude blacklisted / hidden organizations from discovery
+        if (hiddenOrgIds.includes(org.id)) {
+          return false;
+        }
+
         // Search text
         if (filters.search) {
           const q = filters.search.toLowerCase();
@@ -264,7 +349,7 @@ export const App: React.FC = () => {
         }
         return a.name.localeCompare(b.name);
       });
-  }, [organizations, filters, bookmarkedIds]);
+  }, [organizations, filters, bookmarkedIds, hiddenOrgIds]);
 
   // Bookmarked Orgs List
   const bookmarkedOrgs = useMemo(() => {
@@ -275,6 +360,11 @@ export const App: React.FC = () => {
   const comparedOrgs = useMemo(() => {
     return organizations.filter((org) => comparedIds.includes(org.id));
   }, [organizations, comparedIds]);
+
+  // Hidden Orgs List
+  const hiddenOrgs = useMemo(() => {
+    return organizations.filter((org) => hiddenOrgIds.includes(org.id));
+  }, [organizations, hiddenOrgIds]);
 
   // Reset pagination visible count when filters change
   useEffect(() => {
@@ -289,8 +379,10 @@ export const App: React.FC = () => {
         onSearchChange={(query) => setFilters((prev) => ({ ...prev, search: query }))}
         bookmarkedCount={bookmarkedIds.length}
         compareCount={comparedIds.length}
+        hiddenCount={hiddenOrgIds.length}
         onOpenBookmarks={() => setShowShortlistModal(true)}
         onOpenCompare={() => setShowCompareModal(true)}
+        onOpenHidden={() => setShowHiddenModal(true)}
         onOpenAnalytics={() => setShowAnalyticsModal(true)}
         onOpenMethodology={() => setShowMethodologyModal(true)}
         darkMode={darkMode}
@@ -375,6 +467,9 @@ export const App: React.FC = () => {
             allYears={allYears}
             totalFilteredCount={filteredOrganizations.length}
             totalAllCount={organizations.length}
+            hiddenCount={hiddenOrgIds.length}
+            onOpenHidden={() => setShowHiddenModal(true)}
+            onRestoreAll={handleRestoreAll}
             isOpenMobile={showMobileFilter}
             onCloseMobile={() => setShowMobileFilter(false)}
             onOpenMethodology={() => setShowMethodologyModal(true)}
@@ -391,7 +486,8 @@ export const App: React.FC = () => {
               filters.bookmarkedOnly ||
               filters.beginnerFriendlyOnly ||
               filters.selectedBeginnerTier ||
-              filters.search) && (
+              filters.search ||
+              hiddenOrgIds.length > 0) && (
               <div className="mb-4 flex flex-wrap items-center gap-2 text-xs select-none">
                 <span className="text-muted-foreground font-medium">Active:</span>
 
@@ -519,6 +615,27 @@ export const App: React.FC = () => {
                   </span>
                 )}
 
+                {hiddenOrgIds.length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-muted-foreground font-medium">
+                    <EyeOff className="h-3 w-3 text-muted-foreground" />
+                    <span>{hiddenOrgIds.length} Hidden</span>
+                    <button
+                      onClick={() => setShowHiddenModal(true)}
+                      className="hover:text-foreground underline ml-0.5 cursor-pointer text-[11px]"
+                      title="View hidden organizations"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={handleRestoreAll}
+                      className="hover:text-primary ml-0.5 cursor-pointer text-xs leading-none"
+                      title="Restore all hidden organizations"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+
                 <button
                   onClick={() =>
                     setFilters({
@@ -578,6 +695,7 @@ export const App: React.FC = () => {
                       selectedYears={filters.selectedYears}
                       onToggleBookmark={toggleBookmark}
                       onToggleCompare={toggleCompare}
+                      onHide={handleHideOrg}
                       onSelect={(target) => setSelectedOrg(target)}
                       onFilterByTech={handleFilterByTech}
                       onFilterByYear={handleFilterByYear}
@@ -728,8 +846,12 @@ export const App: React.FC = () => {
         onClose={() => setSelectedOrg(null)}
         isBookmarked={selectedOrg ? bookmarkedIds.includes(selectedOrg.id) : false}
         isCompared={selectedOrg ? comparedIds.includes(selectedOrg.id) : false}
+        isBlacklisted={selectedOrg ? hiddenOrgIds.includes(selectedOrg.id) : false}
         onToggleBookmark={toggleBookmark}
         onToggleCompare={toggleCompare}
+        onToggleHide={(org) =>
+          hiddenOrgIds.includes(org.id) ? handleRestoreOrg(org) : handleHideOrg(org)
+        }
         onOpenMethodology={() => setShowMethodologyModal(true)}
       />
 
@@ -762,10 +884,57 @@ export const App: React.FC = () => {
         />
       )}
 
+      {showHiddenModal && (
+        <HiddenOrganizationsModal
+          hiddenOrgs={hiddenOrgs}
+          onClose={() => setShowHiddenModal(false)}
+          onRestoreOrg={handleRestoreOrg}
+          onRestoreAll={handleRestoreAll}
+          onSelectOrg={(org) => setSelectedOrg(org)}
+        />
+      )}
+
       <BeginnerMethodologyModal
         isOpen={showMethodologyModal}
         onClose={() => setShowMethodologyModal(false)}
       />
+
+      {/* Toast Notification with Undo */}
+      {toast && (
+        <div
+          className="fixed bottom-6 right-4 sm:right-6 z-50 flex items-center gap-3 rounded-xl border border-border bg-card/95 backdrop-blur-md px-4 py-3 shadow-2xl text-xs animate-in slide-in-from-bottom-4 duration-200 select-none"
+          role="status"
+          aria-live="polite"
+        >
+          {toast.type === 'hide' ? (
+            <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+          ) : (
+            <RotateCcw className="h-4 w-4 text-emerald-500 shrink-0" />
+          )}
+          <span className="text-foreground">
+            {toast.type === 'hide' ? 'Hidden ' : 'Restored '}
+            <strong className="font-semibold text-foreground">{toast.orgName}</strong>
+          </span>
+          {toast.type === 'hide' && (
+            <button
+              type="button"
+              onClick={handleUndoToast}
+              className="font-bold text-primary hover:underline ml-2 cursor-pointer"
+            >
+              Undo
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer ml-1"
+            title="Dismiss notification"
+            aria-label="Dismiss notification"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
